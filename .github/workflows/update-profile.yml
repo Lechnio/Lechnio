@@ -1,0 +1,110 @@
+# Regenerates the total-stars chart and the Supporters section of README.md.
+#
+# SECURITY: this workflow only uses the built-in GITHUB_TOKEN, which is scoped to
+# this repository. NEVER add a personal access token here, not in env, not as
+# `token:` for actions/checkout. scripts/update_profile.py checks for that and
+# fails the run if it finds one.
+#
+# The work is split so that no job holds secrets AND write access at once:
+#   generate: runs repository code, has the secrets, token is READ-ONLY.
+#   commit:   has write access, gets NO secrets and runs NO repository code;
+#             it only copies the generated files and pushes them.
+#
+# Secrets (Settings -> Secrets and variables -> Actions):
+#   BMC_TOKEN          Buy Me a Coffee API token (optional until you have members)
+#   SUPPORTERS_OPTOUT  comma-separated names never to publish (optional)
+
+name: Update profile
+
+on:
+  schedule:
+    - cron: "17 4 * * *" # daily at 04:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: update-profile
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: profile-update # holds BMC_TOKEN; restricted to the main branch
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate stars chart and supporters
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BMC_TOKEN: ${{ secrets.BMC_TOKEN }}
+          SUPPORTERS_OPTOUT: ${{ secrets.SUPPORTERS_OPTOUT }}
+          STARS_START_DATE: "" # e.g. "2025-01-01"; empty = from the first star
+        run: python3 scripts/update_profile.py
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: profile
+          path: |
+            README.md
+            assets/stars-history.csv
+            assets/stars-light.svg
+            assets/stars-dark.svg
+          if-no-files-found: error
+          retention-days: 1
+
+  commit:
+    needs: generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Same guard as in scripts/update_profile.py, for the job that can push.
+      - name: Refuse personal access tokens
+        env:
+          BUILTIN_TOKEN: ${{ github.token }}
+        run: |
+          if env | grep -qE '=(ghp_|github_pat_|gho_|ghu_|ghr_)'; then
+            echo "::error::A personal GitHub token is present. Only the built-in GITHUB_TOKEN is allowed."
+            exit 1
+          fi
+          for b64 in $(git config --list --includes | grep -ioE 'basic [A-Za-z0-9+/=]+' | awk '{print $2}'); do
+            cred=$(printf '%s' "$b64" | base64 -d)
+            if [ "${cred#*:}" != "$BUILTIN_TOKEN" ]; then
+              echo "::error::actions/checkout uses a token other than the built-in GITHUB_TOKEN."
+              exit 1
+            fi
+          done
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: profile
+          path: ${{ runner.temp }}/profile
+
+      # Copy exactly four known files. Nothing from the artifact is executed.
+      - name: Commit changes
+        env:
+          SRC: ${{ runner.temp }}/profile
+        run: |
+          mkdir -p assets
+          cp -- "$SRC/README.md" README.md
+          cp -- "$SRC/assets/stars-history.csv" assets/stars-history.csv
+          cp -- "$SRC/assets/stars-light.svg" assets/stars-light.svg
+          cp -- "$SRC/assets/stars-dark.svg" assets/stars-dark.svg
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md assets/stars-history.csv assets/stars-light.svg assets/stars-dark.svg
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git commit -m "chore: update stars chart and supporters"
+          git push
