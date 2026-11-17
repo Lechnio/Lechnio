@@ -23,9 +23,10 @@ and I intend to stay ahead in that race.
 
 ### What I work on
 
-- 🛡️ **Anti-cheat**: game integrity, tamper and injection detection, Windows internals
+- 🛡️ **Anti-Cheat**: game integrity, tamper and injection detection, Windows internals
 - 🔍 **Reverse engineering**: Windows binaries, protectors and anti-debug, PE internals
 - 🧨 **Offensive security**: researching new attack techniques and building tooling for them
+- 📡 **RF hacking**: Sub-GHz and infrared signal analysis, remote and rolling-code protocols, on-device tooling
 - 🦀 **Currently**: building with **Rust** alongside C++
 
 ### Tech & tools
@@ -38,13 +39,13 @@ and I intend to stay ahead in that race.
 
 **Reverse engineering**<br>
 ![x86/x64 ASM](https://img.shields.io/badge/x86%2Fx64%20ASM-6E4C13?style=flat-square)
+![Windows Internals](https://img.shields.io/badge/Windows%20Internals-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![IDA Pro](https://img.shields.io/badge/IDA%20Pro-1E1E1E?style=flat-square)
 ![Ghidra](https://img.shields.io/badge/Ghidra-D22128?style=flat-square)
 
 **Platforms & DevOps**<br>
-![Windows](https://img.shields.io/badge/Windows%20Internals-0078D4?style=flat-square&logo=windows&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
-![ARM](https://img.shields.io/badge/ARM-0091BD?style=flat-square&logo=arm&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-844FBA?style=flat-square&logo=terraform&logoColor=white)
 
